@@ -1,5 +1,4 @@
 # openvpn-install
-https://github.com/angristan/openvpn-install
 ## FORK from https://github.com/angristan/openvpn-install
 ## 基于angristan的版本，针对国内的内网组网需求做了定制化修改，默认支持client之间互联，不支持单配置文件多端复用（与固定IP冲突）
 - 所有交互提示改为中文
