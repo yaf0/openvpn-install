@@ -9,21 +9,23 @@
 
 ## 使用方法
 
-- 获取脚本，并授予执行权限
-- 最好在全新安装的服务器安装，在使用其他方式安装过openvpn的服务器上可能会有异常
+- 最好在全新安装的服务器部署，最好独立部署，不与其他应用共用服务器
+- 对Linux发行版一般没有限制，但建议使用Ubuntu/CentOS/Debian的较新稳定版本
 
+- 获取脚本，并授予执行权限
 
 ```bash
-curl -O https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh
+curl -O https://raw.githubusercontent.com/yaf0/openvpn-install/master/openvpn-install.sh
+# 国内一般无法顺利下载，可以项目中直接复制脚本代码粘贴到终端，或者下载上传
 chmod +x openvpn-install.sh
 ```
 
-- 对于国内场景，easy-rsa无法直接下载，请手动下载后放到服务器/opt目录下，注意不要改文件名，使用其原始文件名 EasyRSA-3.1.2.tgz
-- https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.2/EasyRSA-3.1.2.tgz
-
-- 执行以验证EasyRSA是否就绪
+- 获取EasyRSA，并校验
 
 ```bash
+wget -O /opt/EasyRSA-3.1.2.tgz https://github.com/OpenVPN/easy-rsa/releases/download/v3.1.2/EasyRSA-3.1.2.tgz
+# 国内easy-rsa一般也无法直接下载，请点击上面链接手动下载后放到服务器/opt目录下，注意不要改文件名，使用其原始文件名 EasyRSA-3.1.2.tgz
+# 使用下面命令校验文件是否就绪
 ls /opt/EasyRSA-3.1.2.tgz > /dev/null 2>&1 && echo "EasyRSA已经正确上传，可以开始安装" || echo "EasyRSA未正确上传，请检查"
 ```
 
