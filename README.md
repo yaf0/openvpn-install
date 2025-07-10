@@ -1,10 +1,11 @@
 # openvpn-install
-
-## FORK了https://github.com/angristan 大佬的 openvpn-install 脚本，并针对对国内的内网组网需求做了定制化修改，默认支持client之间互联，不支持单配置文件多端复用（与固定IP冲突）
-- 0、所有交互提示改为中文
-- 1、增加客户端静态IP的选项，允许增加客户端时固定其内网IP
-- 2、默认去除了全局路由推送、DNS推送，组网场景不使用服务器作为流量出口，不修改客户的DNS
-- 3、增加了国内环境测试可用的获取公网IP的网站 http://ip.sb
+https://github.com/angristan/openvpn-install
+## FORK from https://github.com/angristan/openvpn-install
+## 基于angristan的版本，针对国内的内网组网需求做了定制化修改，默认支持client之间互联，不支持单配置文件多端复用（与固定IP冲突）
+- 所有交互提示改为中文
+- 增加客户端静态IP的选项，允许增加客户端时固定其内网IP
+- 默认去除了全局路由推送、DNS推送，组网场景不使用服务器作为流量出口，不修改客户的DNS
+- 增加了国内环境测试可用的获取公网IP的网站 http://ip.sb
 
 
 ## 使用方法
