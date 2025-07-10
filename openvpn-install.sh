@@ -268,10 +268,10 @@ function resolvePublicIP() {
         echo "$PUBLIC_IP"
 }
 
-# 计算下一个可用的固定IP地址
+# 计算下一个可用的静态IP地址
 function getNextAvailableIP() {
         local base_ip="10.8.0"
-        local start_ip=100  # 从10.8.0.100开始分配固定IP
+        local start_ip=100  # 从10.8.0.100开始分配静态IP
 
         # 检查CCD目录是否存在
         if [[ ! -d /etc/openvpn/ccd ]]; then
@@ -289,7 +289,7 @@ function getNextAvailableIP() {
                 done < /etc/openvpn/ipp.txt
         fi
 
-        # 检查CCD文件中的固定IP
+        # 检查CCD文件中的静态IP
         for ccd_file in /etc/openvpn/ccd/*; do
                 if [[ -f "$ccd_file" ]]; then
                         local fixed_ip=$(grep -o 'ifconfig-push [0-9.]*' "$ccd_file" | awk '{print $2}')
@@ -321,7 +321,8 @@ function getNextAvailableIP() {
         done
 
         # 如果没有可用IP，返回错误
-        echo "找不到新的可用IP了"
+        echo "ERROR_NO_IP_AVAILABLE"
+        return 1
 }
 
 # 验证IP地址是否可用
@@ -349,7 +350,7 @@ function validateIP() {
                 fi
         fi
 
-        # 检查CCD文件中的固定IP
+        # 检查CCD文件中的静态IP
         if [[ -d /etc/openvpn/ccd ]]; then
                 for ccd_file in /etc/openvpn/ccd/*; do
                         if [[ -f "$ccd_file" ]]; then
@@ -365,7 +366,7 @@ function validateIP() {
 
 function installQuestions() {
         echo "欢迎使用OpenVPN安装程序！"
-        echo "Git仓库地址：https://github.com/angristan/openvpn-install"
+        echo "Git仓库地址：https://github.com/yaf0/openvpn-install"
         echo ""
 
         echo "在开始设置之前，我需要询问您几个问题。"
@@ -395,7 +396,7 @@ function installQuestions() {
                 fi
                 echo "获取到公网出口地址：$DEFAULT_ENDPOINT 当然，你也可以改用域名，以应对服务器ip变更"
                 until [[ $ENDPOINT != "" ]]; do
-                        read -rp "公共IPv4地址或主机名: " -e -i "$DEFAULT_ENDPOINT" ENDPOINT
+                        read -rp "公网IPv4地址或域名: " -e -i "$DEFAULT_ENDPOINT" ENDPOINT
                 done
         fi
 
@@ -857,9 +858,8 @@ function installOpenVPN() {
                         cp "$EASY_RSA_FILE" ~/easy-rsa.tgz
                 else
                         echo "本地easy-rsa文件未找到，下载easy-rsa 版本 $version..."
-            echo "如下载失败，请手动下载并放置到$EASY_RSA_FILE"
-                        # wget -O ~/easy-rsa.tgz "$EASY_RSA_URL"
-            wget -O ~/easy-rsa.tgz $EASY_RSA_URL
+                        echo "如下载失败，请手动下载并放置到$EASY_RSA_FILE"
+                        wget -O ~/easy-rsa.tgz "$EASY_RSA_URL"
                 fi
 
                 mkdir -p /etc/openvpn/easy-rsa
@@ -1021,8 +1021,8 @@ ifconfig-pool-persist ipp.txt" >>/etc/openvpn/server.conf
         if [[ $IPV6_SUPPORT == 'y' ]]; then
                 echo 'server-ipv6 fd42:42:42:42::/112
 tun-ipv6
-push tun-ipv6' >>/etc/openvpn/server.conf
-# push "route-ipv6 2000::/3"
+push tun-ipv6
+push "route-ipv6 2000::/3"' >>/etc/openvpn/server.conf
 # push "redirect-gateway ipv6"' >>/etc/openvpn/server.conf
         fi
 
@@ -1210,33 +1210,33 @@ verb 3" >>/etc/openvpn/client-template.txt
         fi
 
         # 生成自定义 client.ovpn
-        echo "服务端布署完成"
-        echo "==================================================="
+        echo "服务端布署完成 服务器CA、服务器CRT、客户端CRT 所有的默认过期时间均为3650天"
+        echo "==========================================++++++++++++++++++========="
         echo "接下来我们生成首个客户端文件"
         newClient
-        echo "如果您想添加更多客户端，只需再次运行此脚本！"
+        echo "如果您想添加客户端、注销客户端、卸载OpenVPN，只需再次运行此脚本！"
 }
 
 function newClient() {
         echo ""
-        echo "告诉我客户端的名称。"
-        echo "名称必须由字母数字字符组成。它也可以包含下划线或破折号。"
+        echo "为新客户端命名"
+        echo "由字母、数字组成，可以包含下划线_或破折号-"
 
         until [[ $CLIENT =~ ^[a-zA-Z0-9_-]+$ ]]; do
                 read -rp "客户端名称: " -e CLIENT
         done
 
         echo ""
-        echo "您是否要为客户端分配固定IP地址？"
-        echo "   1) 使用动态IP"
-        echo "   2) 分配固定IP"
+        echo "您是否要为客户端分配静态IP地址？"
+        echo "   1) 指定静态IP（默认）"
+        echo "   2) DHCP（动态IP）"
 
         until [[ $FIXED_IP_CHOICE =~ ^[1-2]$ ]]; do
-                read -rp "选择选项 [1-2]: " -e -i 2 FIXED_IP_CHOICE
+                read -rp "选择选项 [1-2]: " -e -i 1 FIXED_IP_CHOICE
         done
 
         FIXED_IP=""
-        if [[ $FIXED_IP_CHOICE == "2" ]]; then
+        if [[ $FIXED_IP_CHOICE == "1" ]]; then
                 # 获取下一个可用IP
                 NEXT_IP=$(getNextAvailableIP)
                 if [[ "$NEXT_IP" == "ERROR_NO_IP_AVAILABLE" ]]; then
@@ -1245,11 +1245,11 @@ function newClient() {
                 fi
 
                 echo ""
-                echo "建议的固定IP地址: $NEXT_IP"
+                echo "建议的顺延可用静态IP: $NEXT_IP"
                 echo "您可以使用建议的IP或输入自定义IP地址（格式：10.8.0.xxx，范围：100-254）"
 
                 until [[ $FIXED_IP != "" ]]; do
-                        read -rp "固定IP地址: " -e -i "$NEXT_IP" FIXED_IP
+                        read -rp "设定静态IP地址为: " -e -i "$NEXT_IP" FIXED_IP
 
                         if [[ "$FIXED_IP" == "" ]]; then
                                 FIXED_IP="$NEXT_IP"
@@ -1261,12 +1261,11 @@ function newClient() {
                         fi
                 done
 
-                echo "将为客户端 $CLIENT 分配固定IP: $FIXED_IP"
+                echo "将为客户端 $CLIENT 分配静态IP: $FIXED_IP"
         fi
 
         echo ""
-        echo "您是否要保护配置文件？"
-        echo "（例如，用密码加密私钥）"
+        echo "您是否要设置密码保护配置文件？（客户端每次发起连接时输入密码）"
         echo "   1) 添加无密码客户端"
         echo "   2) 为客户端使用密码"
 
@@ -1277,7 +1276,7 @@ function newClient() {
         CLIENTEXISTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c -E "/CN=$CLIENT\$")
         if [[ $CLIENTEXISTS == '1' ]]; then
                 echo ""
-                echo "指定的客户端CN已在easy-rsa中找到，请选择另一个名称。"
+                echo "客户端命名重复，请重新输入"
                 exit
         else
                 cd /etc/openvpn/easy-rsa/ || return
@@ -1293,10 +1292,10 @@ function newClient() {
                 echo "客户端 $CLIENT 已添加。"
         fi
 
-        # 如果选择了固定IP，创建CCD配置文件
+        # 如果选择了静态IP，创建CCD配置文件
         if [[ -n "$FIXED_IP" ]]; then
                 echo "ifconfig-push $FIXED_IP 255.255.255.0" > "/etc/openvpn/ccd/$CLIENT"
-                echo "已为客户端 $CLIENT 创建固定IP配置: $FIXED_IP"
+                echo "已为客户端 $CLIENT 创建静态IP配置: $FIXED_IP"
         fi
 
         # Home directory of the user, where the client configuration will be written
@@ -1357,7 +1356,7 @@ function newClient() {
         echo "配置文件已写入 $homeDir/$CLIENT.ovpn。"
         echo "下载.ovpn文件并将其导入到您的OpenVPN客户端中。"
         if [[ -n "$FIXED_IP" ]]; then
-                echo "此客户端将使用固定IP地址: $FIXED_IP"
+                echo "此客户端的静态IP为: $FIXED_IP"
         fi
 
         exit 0
@@ -1372,7 +1371,7 @@ function revokeClient() {
         fi
 
         echo ""
-        echo "选择您要撤销的现有客户端"
+        echo "选择您要注销的现有客户端"
         tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
         until [[ $CLIENTNUMBER -ge 1 && $CLIENTNUMBER -le $NUMBEROFCLIENTS ]]; do
                 if [[ $CLIENTNUMBER == '1' ]]; then
@@ -1392,10 +1391,10 @@ function revokeClient() {
         rm -f "/root/$CLIENT.ovpn"
         sed -i "/^$CLIENT,.*/d" /etc/openvpn/ipp.txt
 
-        # 清理固定IP配置
+        # 清理静态IP配置
         if [[ -f "/etc/openvpn/ccd/$CLIENT" ]]; then
                 rm -f "/etc/openvpn/ccd/$CLIENT"
-                echo "已删除客户端 $CLIENT 的固定IP配置。"
+                echo "已删除客户端 $CLIENT 的静态IP配置。"
         fi
 
         cp /etc/openvpn/easy-rsa/pki/index.txt{,.bk}
